@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -45,10 +46,10 @@ def custom_exception_handler(_: Request, exc: Exception):
 @app.exception_handler(404)
 def not_found_handler(request: Request, _: Exception):
     return JSONResponse(
-        status_code=404,
+        status_code=HTTPStatus.NOT_FOUND,
         content={
             "status": "error",
             "message": f"Cannot find {request.url.path} on this server",
-            "code": 404,
+            "code": HTTPStatus.NOT_FOUND,
         },
     )
