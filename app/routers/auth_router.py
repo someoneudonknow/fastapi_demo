@@ -1,6 +1,9 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends
 
 from app.controllers.auth_controller import AuthController
+from app.cores.error_response import BaseErrorResponse
 from app.cores.success_response import Created, SuccessResponse
 from app.dependencies.auth_dependency import get_current_user
 from app.schemas.auth import AuthResponse, Login, Register, TokensResponse

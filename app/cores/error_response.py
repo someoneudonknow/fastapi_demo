@@ -1,5 +1,13 @@
 from http import HTTPStatus
 
+from pydantic import BaseModel
+
+
+class BaseErrorResponse(BaseModel):
+    success: bool = False
+    message: str
+    code: int
+
 
 class ErrorResponse(Exception):
     def __init__(self, message, status_code):

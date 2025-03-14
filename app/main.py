@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.configs.config import settings
-from app.databases.init_postgresql import Base, engine, init_db
+from app.databases.init_postgresql import init_db
 from app.routers.main import app_router
 
 app = FastAPI(title=settings.app_name, version="0.1.0")

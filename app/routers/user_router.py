@@ -8,7 +8,7 @@ from app.models.user import UserRole
 from app.schemas.paginate import PaginateResponse
 from app.schemas.user import UserResponse, UserUpdate
 
-user_router = APIRouter(prefix="/users", tags=["users"])
+user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @user_router.get("/me", response_model=SuccessResponse[UserResponse])
@@ -21,6 +21,11 @@ def update_user(current_user=Depends(get_current_user), update_body: UserUpdate 
     return UserController.update_user(current_user["user"]["user_id"], update_body)
 
 
+@user_router.get("/{user_id}", response_model=SuccessResponse[UserResponse])
+def get_user_by_id(_=Depends(require_role(UserRole.ADMIN)), user_id: int | None = None):
+    return UserController.get_user(user_id)
+
+
 @user_router.get("", response_model=SuccessResponse[PaginateResponse[UserResponse]])
 def get_all(_=Depends(require_role(UserRole.ADMIN)), page: int = 1, limit: int = 10):
     return UserController.get_users(page, limit)
@@ -30,5 +35,4 @@ def get_all(_=Depends(require_role(UserRole.ADMIN)), page: int = 1, limit: int =
 def delete_user(
     current_user=Depends(require_role(UserRole.ADMIN)), user_id: int | None = None
 ):
-    print(user_id, current_user)
     return UserController.delete_user(user_id, current_user)

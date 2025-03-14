@@ -9,6 +9,21 @@ from app.schemas.user import UserUpdate
 
 class UserRepository:
     @staticmethod
+    def update_role_by_id(id: int, role: UserRole):
+        db = get_db()
+        user = db.query(User).filter(User.id == id).first()
+
+        if not user:
+            return None
+
+        user.role = role
+
+        db.commit()
+        db.refresh(user)
+
+        return user
+
+    @staticmethod
     def delete_by_id(user_id: int):
         db = get_db()
         user = db.query(User).filter(User.id == user_id).first()

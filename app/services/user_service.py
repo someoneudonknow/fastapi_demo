@@ -1,4 +1,5 @@
 from app.cores.error_response import BadRequestException
+from app.models.user import UserRole
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserUpdate
 from app.utils.debug import logger
@@ -19,6 +20,10 @@ class UserService:
         return to_dict(
             UserRepository.update_by_id(id, update_body), excludes=["password"]
         )
+
+    @staticmethod
+    def update_user_role(id: int, role: UserRole):
+        return UserRepository.update_role_by_id(id, role)
 
     @staticmethod
     def create_user(email: str, name: str, password: str, role: str):
