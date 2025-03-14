@@ -21,4 +21,3 @@ class UserResponse(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, examples=["Hatsune Miku"])
-    email: Optional[EmailStr] = Field(None, examples=["hatsune.miku@gmail.com"])
