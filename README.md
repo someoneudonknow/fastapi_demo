@@ -13,7 +13,7 @@ Ensure you have the following installed:
 
 ```bash
 git clone https://github.com/someoneudonknow/fastapi_demo.git
-cd python_fastAPI_demo
+cd fastapi_demo
 ```
 
 ##### 2. Create a `.env` file
