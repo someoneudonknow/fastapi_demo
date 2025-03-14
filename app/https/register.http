@@ -1,0 +1,12 @@
+# @name REGISTER
+
+POST http://localhost:8000/api/v1/auths/register
+Content-Type: application/json
+
+{
+  "password": "supersecretpassword",
+  "name": "Hatsune Miku",
+  "email": "hatsune.miku1@gmail.com"
+}
+
+

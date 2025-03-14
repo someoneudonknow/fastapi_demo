@@ -1,0 +1,9 @@
+# @name LOGIN
+
+POST http://localhost:8000/api/v1/auths/login
+Content-Type: application/json
+
+{
+  "password": "supersecretpassword",
+  "email": "hatsune.miku@gmail.com"
+}
