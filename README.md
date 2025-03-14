@@ -38,7 +38,7 @@ REDIS_PORT=6379
 ##### 3. Build and start the containers
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ##### 4. Access the application
