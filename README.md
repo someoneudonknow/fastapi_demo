@@ -48,12 +48,3 @@ The fastapi application will be available at `http://localhost:8000`.
 ##### 5. API Documentation
 
 Open your web browser and navigate to `http://localhost:8000/docs` to access the Swagger UI.
-
-### Features
-
-- FastAPI
-- PostgreSQL
-- Redis
-- Docker
-- Docker Compose
-- Environment Variables
