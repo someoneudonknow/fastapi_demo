@@ -3,77 +3,101 @@ from datetime import datetime, timedelta
 
 import jwt
 
-from app.services.redis_service import RedisService
-from app.utils.redis_util import create_redis_key
+from app.configs.config import settings
+from app.databases.init_postgresql import get_db
+from app.models.token import Token
 
-ENCODE_ALGORITHM = "RS256"
+ENCODE_ALGORITHM = "HS256"
 USER_TOKEN_PREFIX = "user_tokens"
 
 
-class TokenService:
-    @staticmethod
-    def verify_token(token: str, public_key: str):
-        return jwt.decode(token, public_key, algorithms=[ENCODE_ALGORITHM])
+def verify_token(token: str, public_key: str):
+    return jwt.decode(token, public_key, algorithms=[ENCODE_ALGORITHM])
 
-    @staticmethod
-    def create_token_pair(payload: dict, public_key: str, private_key: str):
-        access_token_expiration_date = datetime.now() + timedelta(days=2)
-        refresh_token_expiration_date = datetime.now() + timedelta(days=7)
 
-        access_token_payload = payload | {"exp": access_token_expiration_date}
-        refresh_token_payload = payload | {"exp": refresh_token_expiration_date}
+def create_token_pair(payload: dict, old_refresh_token: str | None = None):
+    access_token_expiration_date = datetime.now() + timedelta(minutes=1)
+    refresh_token_expiration_date = datetime.now() + timedelta(days=30)
 
-        access_token = jwt.encode(
-            access_token_payload,
-            private_key,
-            algorithm=ENCODE_ALGORITHM,
-            headers={"alg": ENCODE_ALGORITHM, "typ": "JWT"},
-        )
-        refresh_token = jwt.encode(
-            refresh_token_payload,
-            private_key,
-            algorithm=ENCODE_ALGORITHM,
-            headers={"alg": ENCODE_ALGORITHM, "typ": "JWT"},
-        )
-
+    if old_refresh_token:
         try:
-            decoded = jwt.decode(
-                access_token, public_key, algorithms=[ENCODE_ALGORITHM]
+            decoded_old_refresh_token = jwt.decode(
+                old_refresh_token,
+                settings.refresh_secret,
+                algorithms=[ENCODE_ALGORITHM],
             )
-            print("Token successfully verified:", decoded)
+            refresh_token_expiration_date = datetime.fromtimestamp(
+                decoded_old_refresh_token["exp"]
+            )
         except jwt.ExpiredSignatureError:
-            print("Token expired")
-        except jwt.InvalidTokenError as err:
-            print("Invalid token", err)
+            print(
+                "Old refresh token expired, generating a new one with 7-day expiration."
+            )
+        except jwt.InvalidTokenError:
+            print(
+                "Invalid old refresh token, generating a new one with 7-day expiration."
+            )
 
-        return {"accessToken": access_token, "refreshToken": refresh_token}
+    access_token_payload = payload | {"exp": access_token_expiration_date}
+    refresh_token_payload = payload | {"exp": refresh_token_expiration_date}
 
-    @staticmethod
-    def delete_token(id: int):
-        key = create_redis_key(USER_TOKEN_PREFIX, id)
-        return RedisService.delete(key)
+    access_token = jwt.encode(
+        access_token_payload,
+        settings.access_secret,
+        algorithm=ENCODE_ALGORITHM,
+        headers={"alg": ENCODE_ALGORITHM, "typ": "JWT"},
+    )
+    refresh_token = jwt.encode(
+        refresh_token_payload,
+        settings.refresh_secret,
+        algorithm=ENCODE_ALGORITHM,
+        headers={"alg": ENCODE_ALGORITHM, "typ": "JWT"},
+    )
 
-    @staticmethod
-    def get_token(id: int):
-        key = create_redis_key(USER_TOKEN_PREFIX, id)
-        data = RedisService.get(key)
+    return {"accessToken": access_token, "refreshToken": refresh_token}
 
-        return json.loads(data) if data is not None else None
 
-    @staticmethod
-    def insert_token(
-        user_id: int,
-        public_key: str,
-        refresh_token: str,
-        private_key: str,
-        refresh_tokens_used: list[str] = [],
-    ):
-        key = create_redis_key(USER_TOKEN_PREFIX, user_id)
-        payload = {
-            "private_key": private_key,
-            "public_key": public_key,
-            "refresh_token": refresh_token,
-            "refresh_tokens_used": refresh_tokens_used,
-        }
+def delete_token(user_id: int):
+    db = get_db()
+    token = db.query(Token).filter(Token.user_id == user_id).first()
 
-        return RedisService.set(key, json.dumps(payload))
+    if not token:
+        return 0
+
+    db.delete(token)
+    db.commit()
+
+    return 1
+
+
+def get_token_by_user_id(id: int):
+    db = get_db()
+    return db.query(Token).filter(Token.user_id == id).first()
+
+
+def insert_or_update_token(
+    user_id: int, refresh_token: str, refresh_tokens_used: list[str] = []
+):
+    db = get_db()
+    found_token = db.query(Token).filter(Token.user_id == user_id).first()
+
+    if found_token is None:
+        token = Token(
+            user_id=user_id,
+            refresh_token=refresh_token,
+            refresh_tokens_used=refresh_tokens_used,
+        )
+
+        db.add(token)
+        db.commit()
+        db.refresh(token)
+
+        return token
+
+    found_token.refresh_token = refresh_token
+    found_token.refresh_tokens_used = refresh_tokens_used
+
+    db.commit()
+    db.refresh(found_token)
+
+    return found_token

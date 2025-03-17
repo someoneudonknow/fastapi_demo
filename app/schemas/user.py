@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
@@ -14,9 +15,12 @@ class UserResponse(BaseModel):
     email: str = Field(examples=["hatsune.miku@gmail.com"])
     name: str = Field(examples=["Hatsune Miku"])
     role: str = Field(examples=["user"])
+    created_at: datetime = Field(examples=["2022-01-01T00:00"])
+    updated_at: datetime = Field(examples=["2022-01-01T00:00"])
 
     class Config:
         from_attributes = True
+        json_encoder: {datetime: lambda v: v.isoformat()}
 
 
 class UserUpdate(BaseModel):

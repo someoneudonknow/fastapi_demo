@@ -1,45 +1,38 @@
 import jwt
-from fastapi import Header
+from fastapi import Depends, Header, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.cores.error_response import BadRequestException, ForbiddenException
-from app.services.token_service import TokenService
+from app.configs.config import settings
+from app.cores.error_response import ForbiddenException
+from app.services.token_service import verify_token
 
-AUTHORIZATION = "authorization"
-REFRESH_TOKEN = "refresh-token"
-CLIENT_ID = "x-client-id"
+auth_scheme = HTTPBearer()
 
 
 async def get_current_user(
-    x_client_id: str = Header(..., description="Client ID for authentication"),
-    x_authorization: str = Header(..., description="Bearer token for authentication"),
+    request: Request,
+    authorization: HTTPAuthorizationCredentials = Depends(auth_scheme),
     refresh_token: str = Header(None, description="Refresh token (optional)"),
 ):
-    if not x_client_id:
-        raise BadRequestException("Invalid request")
-
-    if not x_authorization:
-        raise BadRequestException("Invalid request")
-
-    tokens = TokenService.get_token(x_client_id)
-
-    if tokens is None:
-        raise BadRequestException("You're not logged in")
-
     if not refresh_token:
         try:
-            decoded_authorization = TokenService.verify_token(
-                x_authorization, tokens["public_key"]
+            decoded_authorization = verify_token(
+                authorization.credentials, settings.access_secret
             )
+
+            request.state.user = decoded_authorization
 
             return {"user": decoded_authorization}
         except Exception:
-            raise ForbiddenException("Token is invalid")
+            raise ForbiddenException("Access denied")
+
     else:
         try:
-            decoded_refresh_token = TokenService.verify_token(
-                refresh_token, tokens["public_key"]
-            )
+            decoded_refresh_token = verify_token(refresh_token, settings.refresh_secret)
+
+            request.state.user = decoded_refresh_token
+            request.state.refresh_token = refresh_token
 
             return {"user": decoded_refresh_token, "refresh_token": refresh_token}
         except Exception:
-            raise ForbiddenException("Token is invalid")
+            raise ForbiddenException("Access denied")

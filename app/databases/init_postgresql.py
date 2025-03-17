@@ -27,25 +27,24 @@ def get_db():
 
 
 def init_db():
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
     from app.configs.config import settings
     from app.models.user import UserRole
-    from app.services.security_service import SecurityService
-    from app.services.user_service import UserService
+    from app.services.security_service import generate_salt, hash
+    from app.services.user_service import create_user, get_user_by_email
 
     admin_email = settings.admin_email
     admin_name = settings.admin_name
     admin_password = settings.admin_password
 
-    admin = UserService.get_user_by_email(admin_email)
+    admin = get_user_by_email(admin_email)
 
     if admin is None:
-        password_hashed = SecurityService.hash(
-            admin_password, SecurityService.generate_salt()
-        )
+        password_hashed = hash(admin_password, generate_salt())
 
-        UserService.create_user(
+        create_user(
             email=admin_email,
             name=admin_name,
             password=password_hashed,

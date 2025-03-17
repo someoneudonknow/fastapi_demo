@@ -20,5 +20,14 @@ class Login(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    user: UserResponse
     tokens: TokensResponse
+
+
+class ForgotPassword(BaseModel):
+    email: EmailStr = Field(examples=["hatsune.miku@gmail.com"])
+
+
+class ResetPassword(BaseModel):
+    email: EmailStr = Field(examples=["hatsune.miku@gmail.com"])
+    new_password: str = Field(examples=["supersecretpassword"])
+    otp: str = Field(examples=["12kskjaldjlajdlajsklj"])
